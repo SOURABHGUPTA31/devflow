@@ -1,12 +1,14 @@
 import express from "express"
 import router from "./routes/health.routes.js";
 import errorhandle from "./middlewares/error.middleware.js";
+import authrouter from "./routes/auth.route.js";
 
 const app= express();
 
 app.use(express.json());
 
 app.use("/api",router)
+app.use("/api/auth" , authrouter)
 
 app.use((req,res) => {
     res.status(404).json({
