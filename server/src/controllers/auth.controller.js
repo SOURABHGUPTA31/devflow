@@ -68,5 +68,9 @@ export const getProfile = async (req,res) => {
     
     return res.status(200).json({user})
 
-
 }
+
+
+ export const getPro = async (req,res) => {
+
+    }
