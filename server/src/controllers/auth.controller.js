@@ -70,7 +70,3 @@ export const getProfile = async (req,res) => {
 
 }
 
-
- export const getPro = async (req,res) => {
-
-    }
