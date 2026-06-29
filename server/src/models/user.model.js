@@ -1,4 +1,4 @@
-import mongoose from "mongoose"
+import mongoose, { Schema } from "mongoose"
 
 const userSchema  = new mongoose.Schema({
     name:{
@@ -13,10 +13,23 @@ const userSchema  = new mongoose.Schema({
     password:{
         type:String,
         required:true
+    },
+    role:{
+        type:String,
+        enum:["admin","teamlead","member"],
+        default:"member"
+    },
+    organization:{
+        type:Schema.Types.ObjectId,
+        ref:"Organization",
+        required:true,
+        unique:true
     }
+
 },{timestamps:true})
 
 const User = mongoose.model("User",userSchema)
 
 export default User
+
 

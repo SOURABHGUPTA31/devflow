@@ -1,31 +1,86 @@
-import User from "../models/user.model.js"
-import  bcrypt from "bcrypt"
-import jwt from "jsonwebtoken"
+import User from "../models/user.model.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import Organization from "../models/organization.model.js";
+import mongoose from "mongoose";
 
-export const registerUser = async (req,res) => {
-      const {name,email,password} = req.body
-    
-      if(!name || !email || !password){
-         return res.status(400).json({message:"all feild are required"})
-      }
+export const registerUser = async (req, res) => {
+  const { adminName, email, password, organizationName } = req.body;
+
+  if (!adminName || !email || !password || !organizationName) {
+    return res.status(400).json({
+      message: "All fields are required",
+    });
+  }
+
+  const existingOrganization = await Organization.findOne({
+    name: organizationName,
+  });
+
+  if (existingOrganization) {
+    return res.status(409).json({
+      message: "Organization already exists",
+    });
+  }
+
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser) {
+    return res.status(409).json({
+      message: "Email already registered",
+    });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+
+    const organization = new Organization({
+      name: organizationName,
+    });
+
+    await organization.save({ session });
+
+ 
+    const user = new User({
+      name: adminName,
+      email,
+      password: hashedPassword,
+      role: "admin",
+      organization: organization._id,
+    });
+
+    await user.save({ session });
+
+  
+    organization.owner = user._id;
+
+    await organization.save({ session });
+
+  
+    await session.commitTransaction();
+
+    return res.status(201).json({
+      message:
+        "Organization and admin account created successfully. Please login to continue.",
+    });
+  } catch (error) {
+   
+    await session.abortTransaction();
+
+    return res.status(500).json({
+      message: error.message,
+    });
+  } finally {
+    await session.endSession();
+  }
+};
+
+
      
-          const existingUser = await User.findOne({email})
-          
-          if(existingUser){
-            return res.status(400).json({message:"email already reagister"})
-          }
-
-           const hashedPassword = await bcrypt.hash(password,10)
-
-           const user =await User.create({
-            name,
-            email,
-            password:hashedPassword
-           })
-
-           return res.status(201).json({message:"User created succesfully"})
-      }
-
 
 export const loginUser = async (req,res) => {
   const {email,password} = req.body
