@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose"
+import USER_ROLES from "../constants/user.roles.js"
 
 const userSchema  = new mongoose.Schema({
     name:{
@@ -16,14 +17,16 @@ const userSchema  = new mongoose.Schema({
     },
     role:{
         type:String,
-        enum:["admin","teamlead","member"],
+        enum:[USER_ROLES.ADMIN,
+            USER_ROLES.TEAMLEADER,
+            USER_ROLES.MEMBER
+        ],
         default:"member"
     },
     organization:{
         type:Schema.Types.ObjectId,
         ref:"Organization",
         required:true,
-        unique:true
     }
 
 },{timestamps:true})
