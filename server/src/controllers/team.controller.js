@@ -23,3 +23,17 @@ export const  createTeam = async (req,res) => {
 
 
 }
+
+
+export const getTeams = async (req,res) => {
+    const organization = req.user.organization
+    
+    if(!organization){
+      return  res.status(400).json({message:"organization was not found"})
+    }
+
+    const teams = await Team.find({ organization:organization})
+
+    return res.status(200).json({teams})
+    
+}

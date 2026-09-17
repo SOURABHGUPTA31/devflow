@@ -1,9 +1,10 @@
 import USER_ROLES from "../constants/user.roles.js"
+import Team from "../models/team.model.js"
 import User from "../models/user.model.js"
 import bcrypt from "bcrypt"
 
 export const createuser = async (req,res) => {
-      const {name,email,password,role} = req.body  
+      const {name,email,password,role,teamId} = req.body  
 
       if(!name || !email || !password  ){
         return   res.status(400).json({message: "All fields are required"})
@@ -24,6 +25,20 @@ export const createuser = async (req,res) => {
         return res.status(400).json({message:"role are invalid"})
       }
 
+      if(teamId){
+        
+        const findTeam = Team.findOne({_id: teamId,
+          organization:req.user.organization
+
+        })
+
+        if(!findTeam){
+             return res.status(400).json({message:"Team was not Found"})
+        }
+        
+        
+      }
+
       const hashedPassword = await bcrypt.hash(password,10);
 
       const user = new User({
@@ -35,6 +50,7 @@ export const createuser = async (req,res) => {
       })
 
       await user.save()
+       
 
       return res.status(201).json({message:"User sucsesfully created"})
 

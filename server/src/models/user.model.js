@@ -27,6 +27,11 @@ const userSchema  = new mongoose.Schema({
         type:Schema.Types.ObjectId,
         ref:"Organization",
         required:true,
+    },
+    team:{
+      type:Schema.Types.ObjectId,
+      ref:"Team",
+      required:false,
     }
 
 },{timestamps:true})
