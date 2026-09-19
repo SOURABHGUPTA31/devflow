@@ -3,56 +3,100 @@ import Team from "../models/team.model.js"
 import User from "../models/user.model.js"
 import bcrypt from "bcrypt"
 
-export const createuser = async (req,res) => {
-      const {name,email,password,role,teamId} = req.body  
+export const createuser = async (req, res) => {
 
-      if(!name || !email || !password  ){
-        return   res.status(400).json({message: "All fields are required"})
-      }
+    const { name, email, password, role, teamId } = req.body
 
-      const existinguser = await User.findOne({email});
+    if (!name || !email || !password) {
+        return res.status(400).json({
+            message: "All fields are required"
+        })
+    }
 
-      if(existinguser){
-        return res.status(409).json({message:"Email already exists"})
+    const existingUser = await User.findOne({ email })
 
-      }
+    if (existingUser) {
+        return res.status(409).json({
+            message: "Email already exists"
+        })
+    }
 
-      const roles = [USER_ROLES.MEMBER,
+    const roles = [
+        USER_ROLES.MEMBER,
         USER_ROLES.TEAMLEADER
-      ]
+    ]
 
-      if(!roles.includes(role)){
-        return res.status(400).json({message:"role are invalid"})
-      }
+    if (!roles.includes(role)) {
+        return res.status(400).json({
+            message: "Invalid role"
+        })
+    }
 
-      if(teamId){
-        
-        const findTeam = Team.findOne({_id: teamId,
-          organization:req.user.organization
+    let team
 
+    if (teamId) {
+
+        const findTeam = await Team.findOne({
+            _id: teamId,
+            organization: req.user.organization
         })
 
-        if(!findTeam){
-             return res.status(400).json({message:"Team was not Found"})
+        if (!findTeam) {
+            return res.status(400).json({
+                message: "Team was not found"
+            })
         }
-        
-        
-      }
 
-      const hashedPassword = await bcrypt.hash(password,10);
+        team = teamId
+    }
 
-      const user = new User({
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    const user = new User({
         name,
         email,
         password: hashedPassword,
         role,
-        organization: req.user.organization
-      })
+        organization: req.user.organization,
+        team: team
+    })
 
-      await user.save()
-       
+    await user.save()
 
-      return res.status(201).json({message:"User sucsesfully created"})
-
-
+    return res.status(201).json({
+        message: "User successfully created"
+    })
 }
+
+export const existingUser = async (req,res) =>{
+
+  const {userId} = req.params
+  const { teamId } = req.body
+    
+  const user = await User.findOne({
+    _id:userId,
+    organization:req.user.organization
+
+  })
+
+  if(!user){
+    return res.status(400).json({message:"user  not found"})
+  }
+
+  const team = await Team.findOne({
+    _id:teamId,
+    organization:req.user.organization
+  })
+
+  if(!team){
+    return res.status(400).json({message:"team not found"})
+  }
+
+
+   user.team = teamId
+
+   await user.save()
+
+   return res.status(4090).json({message:"Team assigned succesfuly"})
+  
+  }
