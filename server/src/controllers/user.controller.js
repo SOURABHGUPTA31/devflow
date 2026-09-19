@@ -102,3 +102,38 @@ export const existingUser = async (req,res) =>{
    return res.status(200).json({message:"Team assigned succesfuly"})
   
   }
+
+
+  export const assignTeamLeader = async (req,res,next) => {
+    const {userId} = req.params
+    const {teamId} = req.body
+
+    const user = await User.findOne({
+        _id: userId,
+        organization:req.user.organization
+
+    })
+
+    if(!user){
+        return res.status(400).json({message:"user was not found"})
+    }
+
+    if(user.role =="member"){
+    
+    }else{
+        return res.status(400).json({message:"role is invalid"})
+    }
+
+     const team = await Team.findOne({
+        _id:teamId,
+        organization:req.user.organization
+     })
+
+     if( !team){
+        return res.status(400).json({message:"team  not found"})
+     }
+
+     if(user.role == teamLeader){
+        return res.status(403).json({message:"team leader already assign in different team "})
+     }
+  }

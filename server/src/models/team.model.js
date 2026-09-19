@@ -9,6 +9,11 @@ const teamSchema = new mongoose.Schema({
     type:Schema.Types.ObjectId,
     ref:"Organization",
     required:true
+   },
+   teamLeader: {
+       type:Schema.Types.ObjectId,
+       ref:"User",
+      required:false
    }
 },{timestamps:true})
 
