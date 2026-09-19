@@ -63,6 +63,8 @@ export const createuser = async (req, res) => {
 
     await user.save()
 
+    console.log("CREATED USER:", user)
+
     return res.status(201).json({
         message: "User successfully created"
     })
@@ -73,11 +75,11 @@ export const existingUser = async (req,res) =>{
   const {userId} = req.params
   const { teamId } = req.body
     
-  const user = await User.findOne({
-    _id:userId,
-    organization:req.user.organization
+   const user = await User.findOne({
+     _id:userId,
+      organization:req.user.organization
 
-  })
+   })
 
   if(!user){
     return res.status(400).json({message:"user  not found"})
@@ -97,6 +99,6 @@ export const existingUser = async (req,res) =>{
 
    await user.save()
 
-   return res.status(4090).json({message:"Team assigned succesfuly"})
+   return res.status(200).json({message:"Team assigned succesfuly"})
   
   }
