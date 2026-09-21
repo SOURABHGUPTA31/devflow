@@ -119,7 +119,11 @@ export const existingUser = async (req,res) =>{
     }
 
     if(user.role =="member"){
-    
+         if(team._id == user.team){
+
+         }  else{
+            
+         }   
     }else{
         return res.status(400).json({message:"role is invalid"})
     }
@@ -133,7 +137,7 @@ export const existingUser = async (req,res) =>{
         return res.status(400).json({message:"team  not found"})
      }
 
-     if(user.role == teamLeader){
-        return res.status(403).json({message:"team leader already assign in different team "})
+     if(team.teamLeader){
+        return res.status(403).json({message:"Team already has a Team Leader"})
      }
   }
