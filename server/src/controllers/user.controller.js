@@ -104,9 +104,9 @@ export const existingUser = async (req,res) =>{
   }
 
 
-  export const assignTeamLeader = async (req,res,next) => {
+  export const assignTeamLeader = async (req,res) => {
     const {userId} = req.params
-    const {teamId} = req.body
+    const {teamId,confirmChange} = req.body
 
     const user = await User.findOne({
         _id: userId,
@@ -118,15 +118,6 @@ export const existingUser = async (req,res) =>{
         return res.status(400).json({message:"user was not found"})
     }
 
-    if(user.role =="member"){
-         if(team._id == user.team){
-
-         }  else{
-            
-         }   
-    }else{
-        return res.status(400).json({message:"role is invalid"})
-    }
 
      const team = await Team.findOne({
         _id:teamId,
@@ -137,7 +128,33 @@ export const existingUser = async (req,res) =>{
         return res.status(400).json({message:"team  not found"})
      }
 
-     if(team.teamLeader){
-        return res.status(403).json({message:"Team already has a Team Leader"})
+     if(team.teamLeader.equal(user._id)){
+        return res.status(400).json({message:"user has allready a teamleadre of this team"})
      }
+
+     if(team.teamLeader && !confirmChange){
+        return res.status(403).json({message:"Team already has a Team Leader", 
+            requiresConfirmation:true})
+     }
+
+
+      if(user.role =="member"){
+         if(team._id.equals(user.team)){
+              team.teamLeader = user._id;
+              user.role = USER_ROLES.TEAMLEADER;
+         }  else{
+            team.teamLeader = user._id;
+            user.team = team._id;
+            user.role = USER_ROLES.TEAMLEADER
+         }   
+    }else{
+        return res.status(400).json({message:"role is invalid"})
+    }
+
+    await user.save();
+    await team.save();
+
+    return res.status(200).json({message:"New Team Leader assigned successfully"})
+
+
   }
