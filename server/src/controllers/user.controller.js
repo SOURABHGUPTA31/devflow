@@ -2,10 +2,15 @@ import USER_ROLES from "../constants/user.roles.js"
 import Team from "../models/team.model.js"
 import User from "../models/user.model.js"
 import bcrypt from "bcrypt"
+import mongoose from "mongoose"
 
 export const createuser = async (req, res) => {
 
-    const { name, email, password, role, teamId } = req.body
+let session
+let findTeam
+
+try{
+    const { name, email, password, role, teamId , confirmChange} = req.body
 
     if (!name || !email || !password) {
         return res.status(400).json({
@@ -32,11 +37,18 @@ export const createuser = async (req, res) => {
         })
     }
 
+    if(role === USER_ROLES.TEAMLEADER && !teamId){
+       return res.status(400).json({
+          message: "Team is required for Team Leader"
+     })
+   }
+
+  
     let team
 
     if (teamId) {
 
-        const findTeam = await Team.findOne({
+        findTeam = await Team.findOne({
             _id: teamId,
             organization: req.user.organization
         })
@@ -47,8 +59,38 @@ export const createuser = async (req, res) => {
             })
         }
 
+        if (role === USER_ROLES.TEAMLEADER && findTeam.teamLeader && !confirmChange) {
+    return res.status(403).json({
+        message: "Team already has a Team Leader",
+        requiresConfirmation: true
+    })
+}
+
+
         team = teamId
     }
+
+
+     session = await mongoose.startSession()
+      session.startTransaction()
+
+   if (
+            role === USER_ROLES.TEAMLEADER &&
+            findTeam &&
+            findTeam.teamLeader &&
+            confirmChange
+        ) {
+
+            const oldTeamLeader = await User.findById(
+                findTeam.teamLeader
+            ).session(session)
+
+            if (oldTeamLeader) {
+                oldTeamLeader.role = USER_ROLES.MEMBER
+                await oldTeamLeader.save({ session })
+            }
+        }
+
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
@@ -61,13 +103,45 @@ export const createuser = async (req, res) => {
         team: team
     })
 
-    await user.save()
+    await user.save({session})
 
-    console.log("CREATED USER:", user)
+    if(user.role == USER_ROLES.TEAMLEADER){
+        const team = await Team.findOne(
+           { _id: teamId,
+            organization:req.user.organization
+           }
+        ).session(session)
+
+        if(!team){
+            return res.status(400).json({message:"team was not found"})
+        }else{
+            team.teamLeader = user._id
+        }
+
+
+
+       await team.save({session})
+    }
+
+    await session.commitTransaction()
 
     return res.status(201).json({
         message: "User successfully created"
     })
+}
+  catch (error) {
+
+        await session.abortTransaction()
+
+        return res.status(500).json({
+            message: "Internal server error"
+        })
+
+    } finally {
+
+        await session.endSession()
+
+    }
 }
 
 export const existingUser = async (req,res) =>{
@@ -127,16 +201,26 @@ export const existingUser = async (req,res) =>{
      if( !team){
         return res.status(400).json({message:"team  not found"})
      }
+     
+     if(team.teamLeader){
 
-     if(team.teamLeader.equal(user._id)){
-        return res.status(400).json({message:"user has allready a teamleadre of this team"})
+        if(team.teamLeader.equals(user._id)){
+            return res.status(400).json({message:"User is already the teamleader of this team"})
+        }
+
+        if(!confirmChange){
+            return res.status(403).json({message:"team already has a teamleader",
+                requiresConfirmation:true
+            })
+        }
+
+        const oldTeamLeader = await User.findById(team.teamLeader)
+
+        if(oldTeamLeader){
+            oldTeamLeader.role = USER_ROLES.MEMBER
+            await oldTeamLeader.save()
+        }
      }
-
-     if(team.teamLeader && !confirmChange){
-        return res.status(403).json({message:"Team already has a Team Leader", 
-            requiresConfirmation:true})
-     }
-
 
       if(user.role =="member"){
          if(team._id.equals(user.team)){
