@@ -125,24 +125,25 @@ try{
 
     await session.commitTransaction()
 
-    return res.status(201).json({
-        message: "User successfully created"
-    })
-}
-  catch (error) {
-
-        await session.abortTransaction()
-
-        return res.status(500).json({
-            message: "Internal server error"
-        })
-
-    } finally {
-
-        await session.endSession()
-
+       return res.status(201).json({
+          message: "User successfully created"
+       })
     }
-}
+    catch (error) {
+       if (session) {
+        await session.abortTransaction()
+    }
+   
+       return res.status(500).json({
+          message: "Internal server error"
+       })
+     }
+       finally {
+          if (session) {
+             await session.endSession()
+          }
+     }
+   }
 
 export const existingUser = async (req,res) =>{
 
@@ -208,7 +209,18 @@ export const existingUser = async (req,res) =>{
             return res.status(400).json({message:"User is already the teamleader of this team"})
         }
 
-        if(!confirmChange){
+       let currentTeam 
+
+       if(user.role === USER_ROLES.TEAMLEADER){
+         currentTeam = await Team.findOne({
+            teamLeader : user._id,
+            organization:req.user.organization 
+         })
+
+
+       }
+
+        if(!confirmChange ){
             return res.status(403).json({message:"team already has a teamleader",
                 requiresConfirmation:true
             })
