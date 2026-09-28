@@ -203,12 +203,6 @@ export const existingUser = async (req,res) =>{
         return res.status(400).json({message:"team  not found"})
      }
      
-     if(team.teamLeader){
-
-        if(team.teamLeader.equals(user._id)){
-            return res.status(400).json({message:"User is already the teamleader of this team"})
-        }
-
        let currentTeam 
 
        if(user.role === USER_ROLES.TEAMLEADER){
@@ -217,14 +211,44 @@ export const existingUser = async (req,res) =>{
             organization:req.user.organization 
          })
 
-
        }
 
-        if(!confirmChange ){
-            return res.status(403).json({message:"team already has a teamleader",
-                requiresConfirmation:true
-            })
+        if(team.teamLeader){
+
+        if(team.teamLeader.equals(user._id)){
+            return res.status(400).json({message:"User is already the teamleader of this team"})
         }
+
+     }
+
+
+      
+        if(!confirmChange && ((currentTeam && !currentTeam._id.equals(team._id)) || team.teamLeader)){
+            let message = ""
+
+            if(currentTeam && !currentTeam._id.equals(team._id)){
+                message = `User is already the Team Leader of ${currentTeam.name}.`
+            }
+
+            if(team.teamLeader){
+                message += `${team.name} already has a team leader.`
+            }
+
+
+            message +=  `do you want to move the user to ${team.name}?`
+
+
+            return res.status(403).json({message,requiresConfirmation:true})
+        }
+
+
+        if(currentTeam && !currentTeam._id.equals(team._id) && confirmChange){
+           currentTeam.teamLeader = null 
+           await currentTeam.save()
+        }
+
+
+        if(team.teamLeader){
 
         const oldTeamLeader = await User.findById(team.teamLeader)
 
@@ -232,9 +256,10 @@ export const existingUser = async (req,res) =>{
             oldTeamLeader.role = USER_ROLES.MEMBER
             await oldTeamLeader.save()
         }
-     }
+    }
 
-      if(user.role =="member"){
+      if(user.role =="member" || user.role == USER_ROLES.TEAMLEADER){
+
          if(team._id.equals(user.team)){
               team.teamLeader = user._id;
               user.role = USER_ROLES.TEAMLEADER;
