@@ -279,3 +279,25 @@ export const existingUser = async (req,res) =>{
 
 
   }
+
+
+
+  export const getAllUsers = async (req,res) => {
+    const users = await  User.find({
+        organization:req.user.organization,
+        role:{$ne: "admin"}
+      })
+     
+    .select("name email role team status")
+     .populate("team")
+
+     return res.status(200).json({
+        users
+     })
+
+      
+
+      
+
+      
+  }

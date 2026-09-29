@@ -32,6 +32,11 @@ const userSchema  = new mongoose.Schema({
       type:Schema.Types.ObjectId,
       ref:"Team",
       required:false,
+    },
+    status:{
+      type:String,
+       enum:["active","disabled"],
+       default:"active"
     }
 
 },{timestamps:true})
