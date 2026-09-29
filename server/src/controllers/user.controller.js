@@ -295,9 +295,40 @@ export const existingUser = async (req,res) =>{
         users
      })
 
-      
+  }
 
-      
+   
+  export const disabledUser = async (req,res) => {
+     const {userId} = req.params
+     const {confirmChange} = req.body
 
-      
+
+     const user = await User.findOne({
+        _id:userId,
+        organization:req.user.organization
+     })
+
+     if(!user){
+        return res.status(404).json({message:"user was not found"})
+     }
+
+        if (user.role === USER_ROLES.ADMIN) {
+            return res.status(403).json({
+                message: "Admin cannot be disabled"
+           })
+       }
+
+     if(!confirmChange){
+        return res.status(403).json({message:"Do you want disabled this user?",
+            requiresConfirmation:true
+        })
+     }
+
+      user.status ="disabled"
+
+     await user.save()
+
+      return res.status(200).json({message:"user disabled successfully"})
+
+
   }
