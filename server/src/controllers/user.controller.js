@@ -298,7 +298,7 @@ export const existingUser = async (req,res) =>{
   }
 
    
-  export const disabledUser = async (req,res) => {
+  export const disableUser = async (req,res) => {
      const {userId} = req.params
      const {confirmChange} = req.body
 
@@ -331,4 +331,61 @@ export const existingUser = async (req,res) =>{
       return res.status(200).json({message:"user disabled successfully"})
 
 
+  }
+
+  export const enableUser = async (req,res) => {
+    const {userId} = req.params
+    const {confirmChange} = req.body
+
+
+    const user = await User.findOne({
+      _id:userId,
+      organization:req.user.organization
+    })
+
+    if(!user){
+        return res.status(404).json({message:"user was not found"})
+    }
+
+    if(!confirmChange){
+        return res.status(403).json({message:"Do you want enabled the user?",
+            requiresConfirmation:true}
+        )
+    }
+
+     user.status = "active"
+        await user.save()
+
+        return res.status(200).json({message:"user enabled successfully "})
+
+
+  }
+
+
+  export const editMyProfile = async (req,res) =>{
+    const {name,email} = req.body
+
+    const user = await User.findById(req.user.userId)
+    
+    if(!user){
+        return res.status(404).json({message:"user was not found"})
+    }
+
+    const updatedName = name.trim()
+    const updatedEmail = email.trim()
+
+    if(updatedName === user.name && updatedEmail === user.email){
+         return res.status(400).json({message:"No changes were made"})
+    }
+
+    if(!updatedName || !updatedEmail){      
+          return res.status(400).json({message:"Name and Email cannot be blank"})
+    }
+
+    user.name = updatedName
+    user.email = updatedEmail
+
+    await user.save()
+
+    return res.status(200).json({message:"profile updated successfully"})
   }
