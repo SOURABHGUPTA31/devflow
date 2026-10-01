@@ -1,7 +1,7 @@
 import express from "express"
 import authMiddleware from "../middlewares/auth.middleware.js"
 import authorization from "../middlewares/authorization.middleware.js"
-import { assignTeamLeader, createuser, disableUser, editMyProfile, enableUser, existingUser, getAllUsers } from "../controllers/user.controller.js"
+import { assignTeamLeader, createuser, disableUser, editMyProfile, enableUser, existingUser, getAllUsers, makeMember } from "../controllers/user.controller.js"
 
 const userRouter = express.Router()
 
@@ -12,5 +12,6 @@ userRouter.get("/dashboard",authMiddleware,authorization("admin"),getAllUsers)
 userRouter.put("/:userId/status/disable",authMiddleware,authorization("admin"),disableUser)
 userRouter.put("/:userId/status/enable",authMiddleware,authorization("admin"),enableUser)
 userRouter.put("/me",authMiddleware,editMyProfile)
+userRouter.put("/:userId/make-memeber",authMiddleware,authorization("admin"),makeMember)
 
 export default userRouter

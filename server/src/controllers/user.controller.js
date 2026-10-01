@@ -289,7 +289,7 @@ export const existingUser = async (req,res) =>{
       })
      
     .select("name email role team status")
-     .populate("team")
+     .populate("team", "name")
 
      return res.status(200).json({
         users
@@ -366,6 +366,7 @@ export const existingUser = async (req,res) =>{
     const {name,email} = req.body
 
     const user = await User.findById(req.user.userId)
+
     
     if(!user){
         return res.status(404).json({message:"user was not found"})
@@ -382,6 +383,14 @@ export const existingUser = async (req,res) =>{
           return res.status(400).json({message:"Name and Email cannot be blank"})
     }
 
+   const existingUser = await User.findOne({email:updatedEmail,
+    _id: {$ne:user._id}
+   })
+
+    if(existingUser){
+        return res.status(409).json({message:"email already exists"})
+    }
+
     user.name = updatedName
     user.email = updatedEmail
 
@@ -389,3 +398,52 @@ export const existingUser = async (req,res) =>{
 
     return res.status(200).json({message:"profile updated successfully"})
   }
+
+  
+  
+  export const makeMember = async (req,res) => {
+    const {confirmChange} = req.body 
+    const{userId} = req.params
+    
+      const user = await User.findOne({
+        _id:userId,
+        organization:req.user.organization
+      })
+
+      if(!user){
+        return res.status(404).json({message:"user was not found"})
+      }
+      
+
+      if(user.role !== USER_ROLES.TEAMLEADER){
+        return res.status(400).json({message:"User is not a teamleader"})
+      }
+
+      if(!confirmChange){
+        return res.status(403).json({message:"Do you want to make this teamleader a memeber?",
+            requiresConfirmation:true
+        })      }
+
+
+     const team = await Team.findOne({
+        teamLeader:user._id,
+        organization:req.user.organization
+     })
+
+     if(!team){
+        return res.status(400).json({message:"Team Leader's team was not found" })
+     }
+
+     team.teamLeader = null
+     user.role = USER_ROLES.MEMBER
+
+     await team.save()
+     await user.save()
+
+     return res.status(200).json({
+        message:"Team Leader changed to member successfully"
+     })
+
+
+  } 
+
