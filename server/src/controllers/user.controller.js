@@ -10,7 +10,7 @@ let session
 let findTeam
 
 try{
-    const { name, email, password, role, teamId , confirmChange} = req.body
+    const { name, email, password, role, teamId , confirmChange, designation} = req.body
 
     if (!name || !email || !password) {
         return res.status(400).json({
@@ -100,7 +100,8 @@ try{
         password: hashedPassword,
         role,
         organization: req.user.organization,
-        team: team
+        team: team,
+        designation: designation?.trim() || ""
     })
 
     await user.save({session})
@@ -288,7 +289,7 @@ export const existingUser = async (req,res) =>{
         role:{$ne: "admin"}
       })
      
-    .select("name email role team status")
+    .select("name email role team status designation")
      .populate("team", "name")
 
      return res.status(200).json({
@@ -446,4 +447,28 @@ export const existingUser = async (req,res) =>{
 
 
   } 
+
+
+  export const editUser = async (req,res) => {
+    const {userId} = req.params
+    const {designation,confirmChange} = req.body
+
+    const user = await User.findOne({
+         _id: userId,
+         organization: req.user.organization
+    })
+
+    if(!user){
+        return res.status(404).json({
+            message:"User was not found"
+        })
+    }
+
+    if(!confirmChange){
+        return res.status(403).json({
+            message:"Do you want to update this user's designation",
+            requiresConfirmation: true
+        })
+    }
+  }
 

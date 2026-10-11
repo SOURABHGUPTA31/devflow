@@ -13,5 +13,6 @@ userRouter.put("/:userId/status/disable",authMiddleware,authorization("admin"),d
 userRouter.put("/:userId/status/enable",authMiddleware,authorization("admin"),enableUser)
 userRouter.put("/me",authMiddleware,editMyProfile)
 userRouter.put("/:userId/make-memeber",authMiddleware,authorization("admin"),makeMember)
+userRouter.put("/:userId/designation",authMiddleware,authorization("admin"),)
 
 export default userRouter

@@ -59,7 +59,7 @@ export const getTeams = async (req,res) => {
     const team = await Team.findOne({
         _id:teamId,
         organization:req.user.organization
-    }).populate("teamleader","name email role")
+    }).populate("teamleader","name email role designation")
 
     if(!team){
         return res.status(400).json({message:"team were not found"})
@@ -71,6 +71,7 @@ export const getTeams = async (req,res) => {
         role:USER_ROLES.MEMBER,
         organization:req.user.organization
     })
+    .select("name email role status designation")
 
     return res.status(200).json(
        { team,
@@ -120,8 +121,45 @@ export const getTeams = async (req,res) => {
   }
 
 
-  export const deleteTeam = async (req,res) = {
+  export const deleteTeam = async (req,res) => {
       const {teamId} = req.params
+      const {confirmChange} = req.body
 
-      const tea
+      const team = await Team.findOne({
+        _id:teamId,
+        organization:req.user.organization
+      })
+
+      if(!team){
+        return res.status(404).json({message:"team was not found"})
+      }
+
+      if(!confirmChange){
+        return res.status(403).json({message:"Do you want to delete this team?",
+            requiresConmfirmation:true
+        })
+      }
+
+      const users = await User.find({
+        team : teamId,
+        organization: req.user.organization
+      })
+
+
+
+      for(const user of users){
+        user.team = null;
+
+        if(user.role === USER_ROLES.TEAMLEADER) {
+          user.role = USER_ROLES.MEMBER
+        }
+
+        await user.save();
+      }
+
+      await team.deleteOne();
+
+      return res.status(200).json({
+        message:"Team deleted successfully"
+      });
     }
