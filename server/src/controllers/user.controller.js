@@ -464,11 +464,33 @@ export const existingUser = async (req,res) =>{
         })
     }
 
+    if(typeof designation !== "string" || !designation.trim()){
+        return res.status(400).json({
+            message:"Job title cannot be empty"
+        })
+    }
+
+    const updatedDesignation = designation.trim();
+
+    if (updatedDesignation === (user.designation || "")){
+        return res.status(400).json({
+            message:"no changes were made"
+        });
+    }
+
     if(!confirmChange){
         return res.status(403).json({
-            message:"Do you want to update this user's designation",
+            message:"Do you want to update this user's job title?",
             requiresConfirmation: true
         })
     }
+
+    user.designation = updatedDesignation;
+
+    await user.save();
+
+    return res.status(200).json({
+        message:"job title updated successfully"
+    })
   }
 
