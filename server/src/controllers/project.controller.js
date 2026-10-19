@@ -1,6 +1,8 @@
 import USER_ROLES from "../constants/user.roles.js"
+import Project from "../models/project.model.js"
 import Team from "../models/team.model.js"
 import User from "../models/user.model.js"
+
 
 export const createProject = async (req,res) => {
     const {name,description,teamId,members,client,startDate,deadline} = req.body
@@ -42,12 +44,6 @@ export const createProject = async (req,res) => {
 
     if(users.length !== members.length){
 
-        const validUserIds = users.map((user) => String(user._id));
-
-        const invalidUserIds = members.filter((id) => {
-            return !validUserIds.includes(String(id));
-        })
-
         return res.status(400).json({
             message:"One or more selected members are invalid or unavailable"
         })
@@ -65,6 +61,66 @@ export const createProject = async (req,res) => {
         return res.status(400).json({message:"Phone must be a non-empty string when provided"})
     }
 
+    if(startDate && Number.isNaN(Date.parse(startDate))){
+        return res.status(400).json({message:"Start date must be valid date"});
+    }
+    
+    if(deadline && Number.isNaN(Date.parse(deadline))){
+        return res.status(400).json({message:"Deadline must be a valid date"})
+    }
+
+    if(startDate){
+        const start = new Date(startDate);
+        const today = new Date();
+
+        start.setHours(0,0,0,0);
+        today.setHours(0,0,0,0);
+
+      if(start < today){
+        return res.status(400).json({message:"start date cannot  be in the past"});
+      }
+    }
+
+   
+
+        if(deadline){
+            const deadlineDate = new Date(deadline);
+            const today = new Date();
+
+            deadlineDate.setHours(0,0,0,0);
+             today.setHours(0,0,0,0);
+
+             if(deadlineDate < today){
+                return res.status(400).json({message:"Deadlilne cannot be in the past"});
+             }
+        }
+
+        if (startDate && deadline && new Date(deadline) < new Date(startDate)) {
+           return res.status(400).json({
+              message: "Deadline cannot be before the start date"
+         });
+      }
+
+     const project = await Project.create({
+        name:name.trim(),
+        description,
+        organization:req.user.organization,
+        team:teamId,
+        createdBy:req.user.userId,
+        members,
+        client,
+        startDate: startDate || undefined,
+        deadline: deadline || undefined
+     }) 
+
+
+     return res.status(201).json({
+        message:"Project created successfully",
+        project
+     })
+    
+
+ 
     
 
    
