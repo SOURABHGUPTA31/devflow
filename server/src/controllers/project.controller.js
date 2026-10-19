@@ -118,10 +118,49 @@ export const createProject = async (req,res) => {
         message:"Project created successfully",
         project
      })
-    
-
- 
-    
-
    
+}
+
+
+export const getAllProjects = async (req,res) => {
+    const projects = await Project.find({
+        organization:req.user.organization,
+        isArchived:false
+    })
+    .populate("team","name")
+    .populate("createdBy","name")
+    .populate("members","name")
+
+    return res.status(200).json({message:"Projects fetched successfully",
+        projects
+    });
+}
+
+export const getprojectsById = async (req,res) => {
+    const {projectId} = req.params
+
+    const projectInfo = await Project.findOne({
+        _id : projectId,
+        organization:req.user.organization
+    })
+      .populate("createdBy","name")
+       .populate("members","name")
+        .populate("team","name")
+
+
+    if(!projectInfo){
+        return res.status(404).json({message:"project not found"})
+    }
+
+    projectInfo.populate("createdBy","name")
+    projectInfo.populate("members","name")
+    projectInfo.populate("team","name")
+
+    return res.status(200).json({message:'project featched successfully',
+        projectInfo
+    })
+}
+
+export const updateProjects = async (req,res) => {
+    
 }
