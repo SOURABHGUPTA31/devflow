@@ -162,5 +162,104 @@ export const getprojectsById = async (req,res) => {
 }
 
 export const updateProjects = async (req,res) => {
-    
+    const {projectId} = req.params
+    const {name,description,teamId,members,client,startDate,deadline,status} = req.body;
+     
+    const project = await Project.findOne({
+        _id:projectId,
+        organization:req.user.organization,
+        isArchived:false
+    })
+
+    if(!project){
+        return res.status(404).json({message:"Project not found"})
+    }
+
+    if(name !== undefined && (typeof name != "string" || !name.trim())){
+        return res.status(400).json({
+            message:"Description must be a string"
+        });
+
+
+    }
+
+    const allowedStatus = ["planned","active","onHold","completed","canceled"];
+
+    if(status != undefined && !allowedStatuses.includes(status)){
+        return res.status(400).json({message:"Invalid project status"});
+    }
+
+    if(client !== undefined){
+        if(!client || typeof client !== "object" || Array.isArray(client)){
+            return res.status(400).json({message:"client must be an object"});
+        }
+
+        if(typeof client.name != "string" || 
+            !client.name.trim() ||
+            typeof client.email !== "string" ||
+            !client.email.trim()
+        ){
+            return res.status(400).json({
+                message:"Client name and email are required"
+            });
+        }
+
+        if( client.phone !== undefinrd && (typeof client.phone !== "string"  || !client.phone.trim())){
+            return res.status(400).json({message:"Phone must be a non-empty string when provided"})
+        }
+    }
+
+    if (startDate !== undefined && Number.isNaN(Date.parse(startDate))) {
+    return res.status(400).json({
+        message: "Start date must be valid"
+    });
+}
+
+if (deadline !== undefined && Number.isNaN(Date.parse(deadline))) {
+    return res.status(400).json({
+        message: "Deadline must be valid"
+    });
+}
+
+const finalStartDate = startDate !== undefined
+    ? new Date(startDate)
+    : project.startDate;
+
+const finalDeadline = deadline !== undefined
+    ? new Date(deadline)
+    : project.deadline;
+
+if (startDate !== undefined && finalStartDate < project.createdAt) {
+    return res.status(400).json({
+        message: "Start date cannot be before project creation"
+    });
+}
+
+if (deadline !== undefined) {
+    const deadlineDay = new Date(finalDeadline);
+    const today = new Date();
+
+    deadlineDay.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    if (deadlineDay < today) {
+        return res.status(400).json({
+            message: "Deadline cannot be in the past"
+        });
+    }
+}
+
+if (finalStartDate && finalDeadline) {
+    const startDay = new Date(finalStartDate);
+    const deadlineDay = new Date(finalDeadline);
+
+    startDay.setHours(0, 0, 0, 0);
+    deadlineDay.setHours(0, 0, 0, 0);
+
+    if (deadlineDay < startDay) {
+        return res.status(400).json({
+            message: "Deadline cannot be before the start date"
+        });
+    }
+}
 }
